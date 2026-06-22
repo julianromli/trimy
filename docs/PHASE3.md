@@ -7,7 +7,7 @@ Phase 3 replaces Phase 2 stubs with real audio/transcript/frame intelligence.
 - **Real silence detection** via RMS analysis on decoded timeline audio (`packages/agent/src/silence-detection.ts`)
 - **Word-level filler removal** from Groq `verbose_json` word timestamps
 - **Highlights heuristic** for short-clip suggestions
-- **Frame capture + vision** via `/api/agent/vision` (Gemini 3.5 Flash on OpenRouter)
+- **Frame capture + vision** via `/api/agent/vision` (Gemini 3 Flash Preview on OpenRouter)
 - **Groq chunking** for audio files larger than 24 MB
 - **Local Whisper download UI** in Agent settings (large-v3-turbo only)
 

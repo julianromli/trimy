@@ -67,7 +67,7 @@ function openRouterProxy(apiKey: string | undefined): Plugin {
 								"X-Title": "Trimy",
 							},
 							body: JSON.stringify({
-								model: payload.model ?? "google/gemini-3.5-flash",
+								model: payload.model ?? "google/gemini-3-flash-preview",
 								messages: [
 									{
 										role: "user",

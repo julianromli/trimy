@@ -20,7 +20,7 @@ See [`docs/PHASE4.md`](docs/PHASE4.md) and [`docs/BYOK.md`](docs/BYOK.md).
 
 - [x] Real RMS silence detection
 - [x] Word-level filler removal (EN + ID)
-- [x] Frame vision via Gemini 3.5 Flash
+- [x] Frame vision via Gemini 3 Flash Preview
 - [x] Groq audio chunking for large files
 
 **Phase 2 — AI Agent sidebar** (done)
@@ -64,7 +64,7 @@ All mutations go through `CommandManager` — undo/redo works the same as manual
 | Editor core | OpenCut Classic (TypeScript + Rust/WASM compositor) |
 | Desktop | Tauri 2 + WebView2 (NSIS installer) |
 | Agent LLM | OpenRouter BYOK (`deepseek/deepseek-v4-pro`) |
-| Vision | OpenRouter BYOK (`google/gemini-3.5-flash`) |
+| Vision | OpenRouter BYOK (`google/gemini-3-flash-preview`) |
 | Transcription | Groq `whisper-large-v3-turbo` + local `whisper-large-v3-turbo` offline |
 
 ## Getting Started (dev)

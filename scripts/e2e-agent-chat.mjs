@@ -35,7 +35,7 @@ async function main() {
 			JSON.stringify({
 				openRouterApiKey: "",
 				chatModel: "deepseek/deepseek-v4-pro",
-				visionModel: "google/gemini-3.5-flash",
+				visionModel: "google/gemini-3-flash-preview",
 				transcriptionProvider: "groq",
 				defaultLanguage: "auto",
 				fillerWords: [],

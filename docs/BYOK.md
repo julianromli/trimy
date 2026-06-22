@@ -8,7 +8,7 @@ Trimy does not host AI models or bill for usage. You connect your own API keys.
 
 Used for:
 - Agent chat (`deepseek/deepseek-v4-pro`)
-- Frame vision / screen-record classification (`google/gemini-3.5-flash`)
+- Frame vision / screen-record classification (`google/gemini-3-flash-preview`)
 
 1. Create account at [openrouter.ai](https://openrouter.ai)
 2. Generate API key (`sk-or-...`)
@@ -42,7 +42,7 @@ Model: OpenAI Whisper large-v3-turbo (ONNX), same family as Groq cloud.
 | Role | Model ID |
 |------|----------|
 | Chat | `deepseek/deepseek-v4-pro` |
-| Vision | `google/gemini-3.5-flash` |
+| Vision | `google/gemini-3-flash-preview` |
 | Transcribe (cloud) | `whisper-large-v3-turbo` |
 | Transcribe (local) | `whisper-large-v3-turbo` |
 

@@ -74,7 +74,7 @@ pub async fn proxy_openrouter_vision(
     let api_key = get_stored_key("openrouter")?;
     let model = request
         .model
-        .unwrap_or_else(|| "google/gemini-3.5-flash".to_string());
+        .unwrap_or_else(|| "google/gemini-3-flash-preview".to_string());
     let prompt = request
         .prompt
         .unwrap_or_else(|| "Describe this frame.".to_string());

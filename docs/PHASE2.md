@@ -38,7 +38,7 @@ Open editor → Agent panel on the right. Enter API key in panel settings if not
 | Role | Model |
 |------|-------|
 | Chat | `openai/gpt-5.4-mini` |
-| Vision | `google/gemini-3.5-flash` |
+| Vision | `google/gemini-3-flash-preview` |
 
 ## E2E tests
 
