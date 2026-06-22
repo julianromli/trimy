@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Trimy Vite SPA: scan shared web editor + desktop shell sources. */
+@source "../**/*.{ts,tsx}";
+@source "../../../editor/src/**/*.{ts,tsx}";
+
 /* Custom variant for dark mode */
 @custom-variant dark (&:where(.dark, .dark *));
 

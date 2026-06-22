@@ -8,7 +8,7 @@ type NextLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
 
 export default function Link({ href, children, ...props }: NextLinkProps) {
 	return (
-		<RouterLink to={href as "/"} {...props}>
+		<RouterLink to={href} {...props}>
 			{children}
 		</RouterLink>
 	);

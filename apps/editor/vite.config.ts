@@ -103,6 +103,7 @@ export default defineConfig(({ mode }) => {
 	const groqApiKey = env.GROQ_API_KEY;
 
 	return {
+		publicDir: path.resolve(__dirname, "../web/public"),
 		plugins: [
 			wasm(),
 			topLevelAwait(),
