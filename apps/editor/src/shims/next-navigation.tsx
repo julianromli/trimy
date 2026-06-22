@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
 	useNavigate,
 	useParams as useTanstackParams,
@@ -29,17 +30,21 @@ function navigateToUrl({
 export function useRouter() {
 	const navigate = useNavigate();
 
-	return {
-		push: (url: string) => {
-			navigateToUrl({ navigate, url, replace: false });
-		},
-		replace: (url: string) => {
-			navigateToUrl({ navigate, url, replace: true });
-		},
-		back: () => {
-			window.history.back();
-		},
-	};
+	// Stable reference — EditorProvider (and others) depend on this in useEffect deps.
+	return useMemo(
+		() => ({
+			push: (url: string) => {
+				navigateToUrl({ navigate, url, replace: false });
+			},
+			replace: (url: string) => {
+				navigateToUrl({ navigate, url, replace: true });
+			},
+			back: () => {
+				window.history.back();
+			},
+		}),
+		[navigate],
+	);
 }
 
 export function useParams<
