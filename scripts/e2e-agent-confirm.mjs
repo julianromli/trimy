@@ -1,27 +1,27 @@
 /**
- * E2E: confirm gate for remove_silence (stub returns >3 regions on 2min clip)
- * Usage: TRIMY_URL=http://localhost:5173 TRIMY_TEST_VIDEO=/tmp/trimy-test-long.mp4 node scripts/e2e-agent-confirm.mjs
+ * E2E: confirm gate for remove_silence using real RMS detection
+ * Usage: TRIMY_URL=http://localhost:5173 node scripts/e2e-agent-confirm.mjs
  */
 import { chromium } from "playwright";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 
 const BASE = process.env.TRIMY_URL ?? "http://localhost:5173";
-const VIDEO =
-	process.env.TRIMY_TEST_VIDEO ??
-	(fsExists("/tmp/trimy-test-long.mp4") ? "/tmp/trimy-test-long.mp4" : "/tmp/trimy-test.mp4");
-
-function fsExists(p) {
-	try {
-		readFileSync(p);
-		return true;
-	} catch {
-		return false;
-	}
-}
+const SILENCE_WAV = "/tmp/trimy-phase3-silence.wav";
 const TIMEOUT_MS = 120_000;
 
+function ensureSilenceFixture() {
+	if (!existsSync(SILENCE_WAV)) {
+		execSync("node scripts/generate-phase3-fixtures.mjs", {
+			cwd: new URL("..", import.meta.url).pathname,
+			stdio: "inherit",
+		});
+	}
+	readFileSync(SILENCE_WAV);
+}
+
 async function main() {
-	readFileSync(VIDEO); // ensure exists
+	ensureSilenceFixture();
 
 	const chromePath =
 		process.env.CHROME_PATH ?? "/usr/bin/google-chrome-stable";
@@ -45,7 +45,7 @@ async function main() {
 	);
 
 	const fileInput = page.locator('input[type="file"]').first();
-	await fileInput.setInputFiles(VIDEO);
+	await fileInput.setInputFiles(SILENCE_WAV);
 	await page.waitForFunction(
 		() => window.__agentBridge.getEditor().media.getAssets().length > 0,
 		{ timeout: 90_000 },
@@ -55,35 +55,42 @@ async function main() {
 
 	const detectResult = await page.evaluate(async () => {
 		return window.__agentBridge.executeTool("detect_silence", {
-			minDurationMs: 1500,
+			minDurationMs: 1200,
+			thresholdDb: -35,
 		});
 	});
 	console.log("detect_silence:", JSON.stringify(detectResult));
 
+	const regions = detectResult.data?.regions ?? [];
+	if (regions.length < 3) {
+		throw new Error(
+			`Expected >=3 silence regions from fixture, got ${regions.length}`,
+		);
+	}
+
 	const removeResult = await page.evaluate(async () => {
 		return window.__agentBridge.executeTool("remove_silence", {
-			minDurationMs: 1500,
+			minDurationMs: 1200,
+			thresholdDb: -35,
 		});
 	});
 
-	if (!removeResult.requiresConfirm && !removeResult.pendingAction) {
+	if (!removeResult.requiresConfirm || !removeResult.pendingAction) {
 		throw new Error(
-			`Expected confirm gate for remove_silence on long clip. Use TRIMY_TEST_VIDEO with duration > 60s. Got: ${JSON.stringify(removeResult)}`,
+			`Expected confirm gate for remove_silence. Got: ${JSON.stringify(removeResult)}`,
 		);
-	} else {
-		if (!removeResult.pendingAction) {
-			throw new Error(`Expected pendingAction: ${JSON.stringify(removeResult)}`);
-		}
-		console.log("✓ PendingAction:", removeResult.pendingAction.summary);
-
-		const approved = await page.evaluate(async (action) => {
-			return window.__agentBridge.executeTool("remove_silence", {
-				minDurationMs: 1500,
-				_skipConfirm: true,
-			});
-		}, removeResult.pendingAction);
-		console.log("✓ Approved execute:", JSON.stringify(approved));
 	}
+
+	console.log("✓ PendingAction:", removeResult.pendingAction.summary);
+
+	const approved = await page.evaluate(async () => {
+		return window.__agentBridge.executeTool("remove_silence", {
+			minDurationMs: 1200,
+			thresholdDb: -35,
+			_skipConfirm: true,
+		});
+	});
+	console.log("✓ Approved execute:", JSON.stringify(approved));
 
 	await browser.close();
 	console.log("PASS e2e-agent-confirm");

@@ -43,4 +43,27 @@ describe("parseGroqVerboseJson", () => {
 
 		expect(result.segments).toEqual([{ text: "hello", start: 1, end: 2 }]);
 	});
+
+	test("preserves word-level timestamps", () => {
+		const result = parseGroqVerboseJson({
+			text: "eh jadi",
+			segments: [
+				{
+					id: 0,
+					start: 0,
+					end: 1.2,
+					text: " eh jadi",
+					words: [
+						{ word: "eh", start: 0.1, end: 0.3 },
+						{ word: "jadi", start: 0.35, end: 0.8 },
+					],
+				},
+			],
+		});
+
+		expect(result.segments[0]?.words).toEqual([
+			{ text: "eh", start: 0.1, end: 0.3 },
+			{ text: "jadi", start: 0.35, end: 0.8 },
+		]);
+	});
 });

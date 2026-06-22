@@ -5,10 +5,17 @@ import { mediaTimeFromSeconds, mediaTimeToSeconds } from "@/wasm/media-time";
 import {
 	buildPendingAction,
 	requiresConfirm,
+	findFillerWordHits,
+	getDefaultFillerWords,
+	findHighlightSegments,
+	buildFrameDescriptionPrompt,
+	parseFrameDescription,
+	loadAgentSettings,
 } from "@trimy/agent";
-import { findFillerWordHits, getDefaultFillerWords } from "@trimy/agent";
 import type { ToolName, ToolResult } from "@trimy/agent";
 import { nanoid } from "nanoid";
+import { detectSilenceFromEditor } from "./audio-intel";
+import { captureFrameAtSeconds } from "./frame-capture";
 
 const TRANSCRIPT_CACHE = new Map<string, TranscriptionResult>();
 
@@ -103,32 +110,55 @@ function deleteRangeOnTimeline({
 	}
 }
 
-async function detectSilenceStub({
-	totalDurationSeconds,
-	minDurationMs = 1500,
+
+function formatRegionPreview(
+	regions: Array<{ startSeconds: number; endSeconds: number }>,
+): string[] {
+	return regions.slice(0, 3).map((region) => {
+		const start = formatMmSs(region.startSeconds);
+		const end = formatMmSs(region.endSeconds);
+		return `${start} – ${end}`;
+	});
+}
+
+function formatMmSs(seconds: number): string {
+	const mins = Math.floor(seconds / 60);
+	const secs = Math.floor(seconds % 60)
+		.toString()
+		.padStart(2, "0");
+	return `${mins}:${secs}`;
+}
+
+function formatFillerPreview(
+	hits: Array<{ text: string; startSeconds: number }>,
+): string[] {
+	return hits.slice(0, 5).map((hit) => `"${hit.text}" @ ${formatMmSs(hit.startSeconds)}`);
+}
+
+async function describeFrameWithVision({
+	pngBase64,
+	model,
 }: {
-	totalDurationSeconds: number;
-	minDurationMs?: number;
-}): Promise<
-	Array<{ startSeconds: number; endSeconds: number; durationSeconds: number }>
-> {
-	// Phase 3: real VAD. Stub: synthetic gaps every 30s for demo/testing
-	const regions: Array<{
-		startSeconds: number;
-		endSeconds: number;
-		durationSeconds: number;
-	}> = [];
-	const gapSec = minDurationMs / 1000;
-	let t = 15;
-	while (t + gapSec < totalDurationSeconds) {
-		regions.push({
-			startSeconds: t,
-			endSeconds: t + gapSec,
-			durationSeconds: gapSec,
-		});
-		t += 30;
+	pngBase64: string;
+	model: string;
+}) {
+	const response = await fetch("/api/agent/vision", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			model,
+			imageBase64: pngBase64,
+			prompt: buildFrameDescriptionPrompt(),
+		}),
+	});
+
+	if (!response.ok) {
+		const text = await response.text();
+		throw new Error(`Vision error ${response.status}: ${text}`);
 	}
-	return regions;
+
+	const payload = (await response.json()) as { content?: string };
+	return parseFrameDescription(payload.content ?? "");
 }
 
 export async function executeAgentTool(
@@ -268,9 +298,13 @@ export async function executeAgentTool(
 			}
 
 			case "detect_silence": {
-				const regions = await detectSilenceStub({
-					totalDurationSeconds: state.totalDurationSeconds,
-					minDurationMs: Number(args.minDurationMs ?? 1500),
+				const settings = loadAgentSettings();
+				const regions = await detectSilenceFromEditor({
+					editor,
+					minDurationMs: Number(
+						args.minDurationMs ?? settings.silenceMinDurationMs,
+					),
+					thresholdDb: Number(args.thresholdDb ?? settings.silenceThresholdDb),
 				});
 				const totalDurationSeconds = regions.reduce(
 					(sum, r) => sum + r.durationSeconds,
@@ -278,7 +312,12 @@ export async function executeAgentTool(
 				);
 				return {
 					ok: true,
-					data: { regions, count: regions.length, totalDurationSeconds },
+					data: {
+						regions,
+						count: regions.length,
+						totalDurationSeconds,
+						preview: formatRegionPreview(regions),
+					},
 				};
 			}
 
@@ -287,13 +326,25 @@ export async function executeAgentTool(
 				if (!transcript) {
 					return { ok: false, error: "No transcript. Call transcribe first." };
 				}
-				const fillerWords = getDefaultFillerWords();
+				const settings = loadAgentSettings();
+				const fillerWords =
+					settings.fillerWords.length > 0
+						? settings.fillerWords
+						: getDefaultFillerWords();
 				const hits = findFillerWordHits({
 					text: transcript.text,
 					segments: transcript.segments,
 					fillerWords,
+					language: (args.language as "en" | "id" | "all") ?? "all",
 				});
-				return { ok: true, data: { hits, count: hits.length } };
+				return {
+					ok: true,
+					data: {
+						hits,
+						count: hits.length,
+						preview: formatFillerPreview(hits),
+					},
+				};
 			}
 
 			case "remove_silence": {
@@ -338,6 +389,7 @@ export async function executeAgentTool(
 							details: [
 								`${regions.length} regions`,
 								`~${Math.round(totalDurationSeconds)}s total silence`,
+								...formatRegionPreview(regions),
 							],
 							affectedRegions: regions.length,
 							removedDurationSec: totalDurationSeconds,
@@ -388,7 +440,10 @@ export async function executeAgentTool(
 								},
 							],
 							summary: `Remove ${hits.length} filler words`,
-							details: [`${hits.length} filler hits detected`],
+							details: [
+								`${hits.length} filler hits detected`,
+								...formatFillerPreview(hits),
+							],
 							affectedRegions: hits.length,
 							removedDurationSec: hits.length * 0.3,
 						}),
@@ -412,27 +467,46 @@ export async function executeAgentTool(
 				if (!transcript) {
 					return { ok: false, error: "No transcript. Call transcribe first." };
 				}
-				const highlights = transcript.segments
-					.filter((s) => s.text.trim().length > 20)
-					.slice(0, count)
-					.map((s, i) => ({
-						startSeconds: s.start,
-						endSeconds: s.end,
-						score: 0.8 - i * 0.1,
-						reason: "Dense speech segment",
-					}));
+				const highlights = findHighlightSegments({
+					segments: transcript.segments,
+					totalDurationSeconds: state.totalDurationSeconds,
+					count,
+				});
 				return { ok: true, data: { highlights } };
 			}
 
 			case "export_frame": {
 				const seconds = Number(args.seconds);
-				bridge.seek(seconds);
+				const frame = await captureFrameAtSeconds({ editor, seconds });
+				const settings = loadAgentSettings();
+				const shouldDescribe = Boolean(args.describe);
+
+				if (!shouldDescribe) {
+					return {
+						ok: true,
+						data: {
+							seconds: frame.seconds,
+							width: frame.width,
+							height: frame.height,
+							filename: frame.filename,
+							hasImage: true,
+						},
+					};
+				}
+
+				const description = await describeFrameWithVision({
+					pngBase64: frame.pngBase64,
+					model: settings.visionModel,
+				});
+
 				return {
 					ok: true,
 					data: {
-						seconds,
-						note: "Frame export stub — vision in Phase 3",
-						describe: args.describe ?? false,
+						seconds: frame.seconds,
+						width: frame.width,
+						height: frame.height,
+						filename: frame.filename,
+						description,
 					},
 				};
 			}

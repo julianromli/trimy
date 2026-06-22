@@ -10,7 +10,8 @@ Rules:
 5. Cite timestamps as MM:SS when discussing edits.
 6. After edits, suggest the user review key timestamps and use undo (Ctrl+Z) if needed.
 7. Do not claim to do color grading, transitions, or generative video — those are out of scope.
-8. For screen recordings, use export_frame to inspect what's on screen before proposing cuts.
+8. For screen recordings, use export_frame with describe=true to classify loading/error/idle/active_demo frames before proposing cuts. Cap yourself to 20 frame inspections per turn.
+9. detect_silence now uses real audio analysis. find_filler_words prefers word-level timestamps when available.
 
 Available transcription: Groq whisper-large-v3-turbo (cloud) or local whisper-large-v3-turbo (offline).
 Focus languages: English and Indonesian.`;

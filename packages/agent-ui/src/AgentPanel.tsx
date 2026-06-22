@@ -21,8 +21,11 @@ import { executeAgentTool } from "@/agent-bridge/tools";
 import { usePanelStore } from "@/editor/panel-store";
 import { useEditor } from "@/editor/use-editor";
 import { getCachedTranscript } from "@/agent-bridge/tools";
+import { transcriptionService } from "@/services/transcription/service";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/ui";
+
+const LOCAL_MODEL_READY_KEY = "trimy-local-whisper-ready";
 
 function ApiKeyBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
 	return (
@@ -96,6 +99,14 @@ export function AgentPanel() {
 	const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 	const [activeTool, setActiveTool] = useState<string | null>(null);
 	const [showSettings, setShowSettings] = useState(false);
+	const [localModelReady, setLocalModelReady] = useState(
+		() =>
+			typeof window !== "undefined" &&
+			localStorage.getItem(LOCAL_MODEL_READY_KEY) === "true",
+	);
+	const [localModelProgress, setLocalModelProgress] = useState<string | null>(
+		null,
+	);
 	const runtimeRef = useRef<AgentRuntime | null>(null);
 	const listRef = useRef<HTMLDivElement>(null);
 
@@ -256,6 +267,28 @@ export function AgentPanel() {
 		setShowSettings(false);
 	};
 
+	const downloadLocalModel = async () => {
+		setLocalModelProgress("Starting download...");
+		try {
+			await transcriptionService.preloadModel({
+				modelId: "whisper-large-v3-turbo",
+				onProgress: (progress) => {
+					setLocalModelProgress(
+						progress.message ??
+							`Downloading local model... ${progress.progress}%`,
+					);
+				},
+			});
+			localStorage.setItem(LOCAL_MODEL_READY_KEY, "true");
+			setLocalModelReady(true);
+			setLocalModelProgress("Local Whisper large-v3-turbo ready.");
+		} catch (error) {
+			setLocalModelProgress(
+				error instanceof Error ? error.message : "Download failed",
+			);
+		}
+	};
+
 	if (agentCollapsed) {
 		return (
 			<div className="flex h-full flex-col items-center border-l bg-background/80 py-2">
@@ -302,6 +335,26 @@ export function AgentPanel() {
 					/>
 					<p className="text-muted-foreground">Chat: {settings.chatModel}</p>
 					<p className="text-muted-foreground">Vision: {settings.visionModel}</p>
+					<div className="space-y-1">
+						<p className="text-muted-foreground">
+							Local Whisper:{" "}
+							{localModelReady ? "ready" : "not downloaded (~1.5 GB)"}
+						</p>
+						{!localModelReady && (
+							<Button
+								size="sm"
+								variant="outline"
+								className="h-7"
+								onClick={downloadLocalModel}
+								disabled={Boolean(localModelProgress)}
+							>
+								Download local model
+							</Button>
+						)}
+						{localModelProgress && (
+							<p className="text-muted-foreground">{localModelProgress}</p>
+						)}
+					</div>
 					<Button size="sm" variant="outline" className="h-7" onClick={() => setShowSettings(false)}>
 						Done
 					</Button>

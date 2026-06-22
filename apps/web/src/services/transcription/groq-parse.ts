@@ -30,6 +30,13 @@ export function parseGroqVerboseJson(
 			text: segment.text.trim(),
 			start: segment.start,
 			end: segment.end,
+			words: segment.words
+				?.map((word) => ({
+					text: word.word.trim(),
+					start: word.start,
+					end: word.end,
+				}))
+				.filter((word) => word.text.length > 0),
 		}))
 		.filter((segment) => segment.text.length > 0);
 

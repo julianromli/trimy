@@ -27,6 +27,104 @@ function openRouterProxy(apiKey: string | undefined): Plugin {
 				);
 			});
 
+			server.middlewares.use("/api/agent/vision", async (req, res, next) => {
+				if (req.method !== "POST") {
+					next();
+					return;
+				}
+
+				if (!apiKey) {
+					res.statusCode = 503;
+					res.setHeader("Content-Type", "application/json");
+					res.end(
+						JSON.stringify({
+							error:
+								"OPENROUTER_API_KEY is not configured. Add it to apps/editor/.env.local for dev.",
+						}),
+					);
+					return;
+				}
+
+				try {
+					const chunks: Buffer[] = [];
+					for await (const chunk of req) {
+						chunks.push(Buffer.from(chunk));
+					}
+					const payload = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
+						model?: string;
+						imageBase64?: string;
+						prompt?: string;
+					};
+
+					const orResponse = await fetch(
+						"https://openrouter.ai/api/v1/chat/completions",
+						{
+							method: "POST",
+							headers: {
+								Authorization: `Bearer ${apiKey}`,
+								"Content-Type": "application/json",
+								"HTTP-Referer": "https://trimy.app",
+								"X-Title": "Trimy",
+							},
+							body: JSON.stringify({
+								model: payload.model ?? "google/gemini-3.5-flash",
+								messages: [
+									{
+										role: "user",
+										content: [
+											{ type: "text", text: payload.prompt ?? "Describe this frame." },
+											{
+												type: "image_url",
+												image_url: {
+													url: `data:image/png;base64,${payload.imageBase64 ?? ""}`,
+												},
+											},
+										],
+									},
+								],
+							}),
+						},
+					);
+
+					const responseJson = (await orResponse.json()) as {
+						choices?: Array<{ message?: { content?: string } }>;
+						error?: { message?: string };
+					};
+
+					if (!orResponse.ok) {
+						res.statusCode = orResponse.status;
+						res.setHeader("Content-Type", "application/json");
+						res.end(
+							JSON.stringify({
+								error:
+									responseJson.error?.message ??
+									`Vision request failed (${orResponse.status})`,
+							}),
+						);
+						return;
+					}
+
+					res.statusCode = 200;
+					res.setHeader("Content-Type", "application/json");
+					res.end(
+						JSON.stringify({
+							content: responseJson.choices?.[0]?.message?.content ?? "",
+						}),
+					);
+				} catch (error) {
+					res.statusCode = 502;
+					res.setHeader("Content-Type", "application/json");
+					res.end(
+						JSON.stringify({
+							error:
+								error instanceof Error
+									? error.message
+									: "Vision proxy failed",
+						}),
+					);
+				}
+			});
+
 			server.middlewares.use("/api/agent/openrouter", async (req, res, next) => {
 				if (req.method !== "POST") {
 					next();

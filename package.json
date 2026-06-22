@@ -26,7 +26,8 @@
     "start:tools": "turbo run start --filter=@opencut/tools",
     "test": "bun test",
     "test:e2e": "xvfb-run -a node scripts/e2e-import-export.mjs",
-    "test:e2e:agent": "xvfb-run -a node scripts/e2e-agent-panel.mjs && xvfb-run -a node scripts/e2e-agent-confirm.mjs && xvfb-run -a node scripts/e2e-agent-chat.mjs"
+    "test:e2e:agent": "xvfb-run -a node scripts/e2e-agent-panel.mjs && xvfb-run -a node scripts/e2e-agent-confirm.mjs && xvfb-run -a node scripts/e2e-agent-chat.mjs",
+    "test:e2e:phase3": "node scripts/generate-phase3-fixtures.mjs && xvfb-run -a node scripts/e2e-agent-confirm.mjs && xvfb-run -a node scripts/e2e-agent-podcast-rough-cut.mjs"
   },
   "dependencies": {
     "@types/react": "^19.2.10",

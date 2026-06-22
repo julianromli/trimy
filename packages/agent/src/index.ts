@@ -6,4 +6,7 @@ export * from "./system-prompt";
 export * from "./presets";
 export * from "./settings";
 export * from "./filler-words";
+export * from "./silence-detection";
+export * from "./highlights";
+export * from "./vision";
 export { AgentRuntime, type AgentRuntimeCallbacks } from "./runtime";

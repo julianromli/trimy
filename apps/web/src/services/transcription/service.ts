@@ -84,6 +84,20 @@ class TranscriptionService {
 		this.worker?.postMessage({ type: "cancel" } satisfies WorkerMessage);
 	}
 
+	async preloadModel({
+		modelId = DEFAULT_TRANSCRIPTION_MODEL,
+		onProgress,
+	}: {
+		modelId?: TranscriptionModelId;
+		onProgress?: ProgressCallback;
+	}): Promise<void> {
+		await this.ensureWorker({ modelId, onProgress });
+	}
+
+	isModelReady(modelId: TranscriptionModelId = DEFAULT_TRANSCRIPTION_MODEL): boolean {
+		return this.isInitialized && this.currentModelId === modelId;
+	}
+
 	private async ensureWorker({
 		modelId,
 		onProgress,
