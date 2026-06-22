@@ -24,7 +24,8 @@
     "preview:web": "turbo run preview --filter=@opencut/web",
     "publish:wasm": "bun run build:wasm && npm publish rust/wasm/pkg --access public",
     "start:tools": "turbo run start --filter=@opencut/tools",
-    "test": "bun test"
+    "test": "bun test",
+    "test:e2e": "xvfb-run -a node scripts/e2e-import-export.mjs"
   },
   "dependencies": {
     "@types/react": "^19.2.10",
@@ -43,6 +44,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.5.0",
+    "playwright": "1.51.1",
     "prettier": "^3.8.3",
     "turbo": "^2.8.20",
     "typescript": "^6.0.2",

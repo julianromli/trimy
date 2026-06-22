@@ -20,6 +20,9 @@ import { transcriptionService } from "@/services/transcription/service";
 import { transcribeWithGroq } from "@/services/transcription/groq-client";
 import { buildCaptionChunks } from "@/transcription/caption";
 import { insertCaptionChunksAsTextTrack } from "@/subtitles/insert";
+import { buildElementFromMedia } from "@/timeline/element-utils";
+import { DEFAULT_NEW_ELEMENT_DURATION } from "@/timeline/creation";
+import type { ExportOptions, ExportResult } from "@/export";
 
 export type AgentBridgeSplitRetainSide = "both" | "left" | "right";
 
@@ -72,6 +75,11 @@ export interface AgentBridge {
 	transcribe: (
 		options?: AgentBridgeTranscribeOptions,
 	) => Promise<TranscriptionResult>;
+	addMediaToTimeline: (options?: {
+		mediaId?: string;
+		startTimeSeconds?: number;
+	}) => void;
+	exportVideo: (options?: ExportOptions) => Promise<ExportResult>;
 }
 
 declare global {
@@ -268,6 +276,40 @@ export function mountAgentBridge(editor: EditorCore): () => void {
 
 			return result;
 		},
+		addMediaToTimeline: (options = {}) => {
+			const assets = editor.media.getAssets();
+			const asset = options.mediaId
+				? assets.find((item) => item.id === options.mediaId)
+				: assets[0];
+			if (!asset) {
+				throw new Error("No media asset available to place on timeline");
+			}
+
+			const startTime =
+				options.startTimeSeconds !== undefined
+					? mediaTimeFromSeconds({ seconds: options.startTimeSeconds })
+					: editor.playback.getCurrentTime();
+
+			const duration =
+				asset.duration != null
+					? mediaTimeFromSeconds({ seconds: asset.duration })
+					: DEFAULT_NEW_ELEMENT_DURATION;
+
+			const element = buildElementFromMedia({
+				mediaId: asset.id,
+				mediaType: asset.type,
+				name: asset.name,
+				duration,
+				startTime,
+			});
+
+			editor.timeline.insertElement({
+				element,
+				placement: { mode: "auto" },
+			});
+		},
+		exportVideo: (options = { format: "mp4", quality: "low", includeAudio: true }) =>
+			editor.project.export({ options }),
 	};
 
 	window.__agentBridge = bridge;
