@@ -153,24 +153,26 @@ export function AgentPanel() {
 				setIsRunning(false);
 			}
 			if (event.type === "done") {
-				setStreaming((current) => {
-					if (current) {
-						setMessages((prev) => {
-							const next = [
-								...prev,
-								{
-									id: event.messageId,
-									role: "assistant" as const,
-									content: current,
-									timestamp: Date.now(),
-								},
-							];
-							if (projectId) saveAgentSession(projectId, next);
-							return next;
-						});
-					}
-					return "";
-				});
+				const assistantContent = event.content?.trim();
+				if (assistantContent) {
+					setMessages((prev) => {
+						if (prev.some((m) => m.id === event.messageId)) {
+							return prev;
+						}
+						const next = [
+							...prev,
+							{
+								id: event.messageId,
+								role: "assistant" as const,
+								content: assistantContent,
+								timestamp: Date.now(),
+							},
+						];
+						if (projectId) saveAgentSession(projectId, next);
+						return next;
+					});
+				}
+				setStreaming("");
 				setIsRunning(false);
 			}
 			if (event.type === "error") {

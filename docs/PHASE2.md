@@ -1,5 +1,16 @@
 # Phase 2 — In-App AI Agent Sidebar
 
+**Status:** Complete (2026-06-22)
+
+## Exit criteria
+
+- [x] "Split at 1 minute" via chat works (OpenRouter tool-calling)
+- [x] Batch silence removal shows PendingAction before execute
+- [x] Batch mutations require confirm when regions > 3 or duration > 30s
+- [x] All edits undoable (Ctrl+Z)
+- [x] OpenRouter key stays server-side in dev (Vite proxy)
+- [x] `bun run test:e2e:agent` green
+
 ## What's included
 
 - **Agent panel** (4th column, `Ctrl+J` toggle)

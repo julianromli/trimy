@@ -157,8 +157,11 @@ export class AgentRuntime {
 					timestamp: Date.now(),
 				};
 				this.messages.push(msg);
-				this.callbacks.onEvent({ type: "token", delta: content });
-				this.callbacks.onEvent({ type: "done", messageId: msg.id });
+				this.callbacks.onEvent({
+					type: "done",
+					messageId: msg.id,
+					content,
+				});
 				this.toolResultsBuffer = [];
 				return;
 			}

@@ -6,7 +6,18 @@ import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
 
 const BASE = process.env.TRIMY_URL ?? "http://localhost:5173";
-const VIDEO = process.env.TRIMY_TEST_VIDEO ?? "/tmp/trimy-test.mp4";
+const VIDEO =
+	process.env.TRIMY_TEST_VIDEO ??
+	(fsExists("/tmp/trimy-test-long.mp4") ? "/tmp/trimy-test-long.mp4" : "/tmp/trimy-test.mp4");
+
+function fsExists(p) {
+	try {
+		readFileSync(p);
+		return true;
+	} catch {
+		return false;
+	}
+}
 const TIMEOUT_MS = 120_000;
 
 async function main() {
@@ -56,8 +67,9 @@ async function main() {
 	});
 
 	if (!removeResult.requiresConfirm && !removeResult.pendingAction) {
-		// Short video may not trigger confirm — that's ok if regions <= 3
-		console.log("Note: confirm not required (small clip)", JSON.stringify(removeResult));
+		throw new Error(
+			`Expected confirm gate for remove_silence on long clip. Use TRIMY_TEST_VIDEO with duration > 60s. Got: ${JSON.stringify(removeResult)}`,
+		);
 	} else {
 		if (!removeResult.pendingAction) {
 			throw new Error(`Expected pendingAction: ${JSON.stringify(removeResult)}`);

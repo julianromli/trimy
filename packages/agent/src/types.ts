@@ -143,5 +143,5 @@ export type AgentEvent =
 	| { type: "tool_start"; name: ToolName; args: Record<string, unknown> }
 	| { type: "tool_end"; name: ToolName; result: ToolResult }
 	| { type: "pending_action"; action: PendingAction }
-	| { type: "done"; messageId: string }
+	| { type: "done"; messageId: string; content?: string }
 	| { type: "error"; message: string };
