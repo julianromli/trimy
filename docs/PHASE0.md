@@ -13,8 +13,8 @@ Prove that Trimy can execute timeline edits programmatically (same undo stack as
 | `splitAtPlayhead()` / `splitAt(seconds)` via `CommandManager` | Done |
 | `getState()` project snapshot | Done |
 | `undo()` / `redo()` | Done |
-| Dev server runs | Pending |
-| Manual DevTools validation with clip | Pending |
+| Dev server runs | Done (port 3001 with `.env.local`) |
+| Manual DevTools validation with clip | Pending (needs media import on local machine) |
 | Groq transcription spike | Pending |
 
 ## Implementation
