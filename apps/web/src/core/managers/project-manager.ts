@@ -167,14 +167,7 @@ export class ProjectManager {
 			});
 
 			if (!project.metadata.thumbnail) {
-				try {
-					const didUpdateThumbnail = await this.updateThumbnailFromTimeline();
-					if (didUpdateThumbnail) {
-						await this.saveCurrentProject();
-					}
-				} catch (error) {
-					console.error("Failed to generate project thumbnail:", error);
-				}
+				this.scheduleThumbnailGeneration();
 			}
 		} catch (error) {
 			console.error("Failed to load project:", error);
@@ -645,6 +638,20 @@ export class ProjectManager {
 	subscribe(listener: () => void): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
+	}
+
+	/** Non-blocking — thumbnail must not delay editor open (especially on WebView2). */
+	private scheduleThumbnailGeneration(): void {
+		void (async () => {
+			try {
+				const didUpdateThumbnail = await this.updateThumbnailFromTimeline();
+				if (didUpdateThumbnail) {
+					await this.saveCurrentProject();
+				}
+			} catch (error) {
+				console.warn("Deferred project thumbnail generation failed:", error);
+			}
+		})();
 	}
 
 	private async updateThumbnailFromTimeline(): Promise<boolean> {

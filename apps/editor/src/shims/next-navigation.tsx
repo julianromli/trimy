@@ -4,15 +4,37 @@ import {
 	useRouter as useTanstackRouter,
 } from "@tanstack/react-router";
 
+function navigateToUrl({
+	navigate,
+	url,
+	replace,
+}: {
+	navigate: ReturnType<typeof useNavigate>;
+	url: string;
+	replace: boolean;
+}) {
+	const editorMatch = url.match(/^\/editor\/([^/?#]+)$/);
+	if (editorMatch) {
+		void navigate({
+			to: "/editor/$projectId",
+			params: { projectId: editorMatch[1] },
+			replace,
+		});
+		return;
+	}
+
+	void navigate({ to: url, replace });
+}
+
 export function useRouter() {
 	const navigate = useNavigate();
 
 	return {
 		push: (url: string) => {
-			void navigate({ to: url });
+			navigateToUrl({ navigate, url, replace: false });
 		},
 		replace: (url: string) => {
-			void navigate({ to: url, replace: true });
+			navigateToUrl({ navigate, url, replace: true });
 		},
 		back: () => {
 			window.history.back();

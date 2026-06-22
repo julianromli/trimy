@@ -39,9 +39,20 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 		const loadProject = async () => {
 			try {
 				setIsLoading(true);
+
+				if (!projectId) {
+					throw new Error("Missing project id in route");
+				}
+
 				await initializeGpuRenderer();
 				editor.renderer.setDegraded(!isGpuAvailable());
-				await editor.project.loadProject({ id: projectId });
+
+				const active = editor.project.getActiveOrNull();
+				if (active?.metadata.id === projectId) {
+					// Project was just created on /projects — already in memory.
+				} else {
+					await editor.project.loadProject({ id: projectId });
+				}
 
 				if (cancelled) return;
 

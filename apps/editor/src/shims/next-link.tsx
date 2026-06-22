@@ -6,9 +6,22 @@ type NextLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
 	children?: ReactNode;
 };
 
+function resolveLinkTarget(href: string) {
+	const editorMatch = href.match(/^\/editor\/([^/?#]+)$/);
+	if (editorMatch) {
+		return {
+			to: "/editor/$projectId" as const,
+			params: { projectId: editorMatch[1] },
+		};
+	}
+
+	return { to: href };
+}
+
 export default function Link({ href, children, ...props }: NextLinkProps) {
+	const target = resolveLinkTarget(href);
 	return (
-		<RouterLink to={href} {...props}>
+		<RouterLink {...target} {...props}>
 			{children}
 		</RouterLink>
 	);

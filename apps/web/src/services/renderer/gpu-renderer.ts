@@ -8,9 +8,35 @@ import type { EffectPass, EffectUniformValue } from "@/effects/types";
 let gpuAvailable = false;
 let initPromise: Promise<void> | null = null;
 
+/** WebGPU adapter request can hang indefinitely in Tauri WebView2 on some Windows GPUs. */
+const GPU_INIT_TIMEOUT_MS = 10_000;
+
+function withTimeout<T>({
+	promise,
+	timeoutMs,
+	label,
+}: {
+	promise: Promise<T>;
+	timeoutMs: number;
+	label: string;
+}): Promise<T> {
+	return Promise.race([
+		promise,
+		new Promise<T>((_, reject) => {
+			window.setTimeout(() => {
+				reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+			}, timeoutMs);
+		}),
+	]);
+}
+
 export function initializeGpuRenderer(): Promise<void> {
 	if (!initPromise) {
-		initPromise = initializeGpu()
+		initPromise = withTimeout({
+			promise: initializeGpu(),
+			timeoutMs: GPU_INIT_TIMEOUT_MS,
+			label: "GPU initialization",
+		})
 			.then(() => {
 				gpuAvailable = true;
 			})
