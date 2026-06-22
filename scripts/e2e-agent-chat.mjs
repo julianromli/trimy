@@ -132,6 +132,15 @@ async function main() {
 	);
 	console.log("Page snippet:", bodySnippet);
 
+	await page.screenshot({
+		path: process.env.OUTPUT_PATH ?? "/tmp/trimy-ui-editor-agent.png",
+		fullPage: false,
+	});
+	console.log(
+		"Saved screenshot:",
+		process.env.OUTPUT_PATH ?? "/tmp/trimy-ui-editor-agent.png",
+	);
+
 	await browser.close();
 	console.log("PASS e2e-agent-chat");
 }
