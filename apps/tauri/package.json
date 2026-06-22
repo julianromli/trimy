@@ -1,0 +1,10 @@
+{
+  "name": "@trimy/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cargo tauri dev",
+    "build": "cargo tauri build",
+    "check": "cargo check --manifest-path src-tauri/Cargo.toml"
+  }
+}

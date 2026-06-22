@@ -6,13 +6,16 @@ English & Indonesian focused. Podcast, talking head, monolog, and screen-record 
 
 ## Status
 
-**Phase 0 — Spike** (in progress)
+**Phase 0.5 — Groq transcription** (done, staged)
 
-- [x] Fork OpenCut Classic
-- [x] `window.__agentBridge` proof-of-concept (programmatic split, seek, undo/redo, project state)
-- [ ] Dev server smoke test with media clip
-- [ ] Groq `whisper-large-v3-turbo` transcription spike
-- [ ] Tauri shell (Phase 1)
+- [x] Groq `whisper-large-v3-turbo` API route + `__agentBridge.transcribe`
+- [ ] Manual DevTools validation with media clip on dev machine
+
+**Phase 1 — Tauri shell** (in progress)
+
+- [x] Tauri 2 scaffold (`apps/tauri`, `bun run dev:tauri`)
+- [ ] Windows `.exe` smoke test
+- [ ] Vite migration (editor SPA)
 
 Full blueprint: [`docs/blueprint.md`](docs/blueprint.md)
 
@@ -70,9 +73,14 @@ bun run build:wasm
 
 # Start web editor
 bun run dev:web
+
+# Desktop shell (dev — starts web server + Tauri window)
+bun run dev:tauri
 ```
 
 Open `http://localhost:3000` and create/open a project.
+
+Add `GROQ_API_KEY` to `apps/web/.env.local` for cloud transcription (Phase 0.5).
 
 > Docker (PostgreSQL, Redis) is optional for Phase 0 — local IndexedDB storage works for editor-only testing.
 

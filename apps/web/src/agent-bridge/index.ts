@@ -8,8 +8,29 @@ import {
 	mediaTimeToSeconds,
 	type MediaTime,
 } from "@/wasm/media-time";
+import { extractTimelineAudio } from "@/media/mediabunny";
+import { decodeAudioToFloat32 } from "@/media/audio";
+import { DEFAULT_TRANSCRIPTION_SAMPLE_RATE } from "@/transcription/audio";
+import type {
+	TranscriptionLanguage,
+	TranscriptionProgress,
+	TranscriptionResult,
+} from "@/transcription/types";
+import { transcriptionService } from "@/services/transcription/service";
+import { transcribeWithGroq } from "@/services/transcription/groq-client";
+import { buildCaptionChunks } from "@/transcription/caption";
+import { insertCaptionChunksAsTextTrack } from "@/subtitles/insert";
 
 export type AgentBridgeSplitRetainSide = "both" | "left" | "right";
+
+export type AgentBridgeTranscriptionProvider = "groq" | "local";
+
+export interface AgentBridgeTranscribeOptions {
+	provider?: AgentBridgeTranscriptionProvider;
+	language?: TranscriptionLanguage;
+	insertCaptions?: boolean;
+	onProgress?: (progress: TranscriptionProgress) => void;
+}
 
 export interface AgentBridgeProjectState {
 	ready: true;
@@ -48,6 +69,9 @@ export interface AgentBridge {
 	) => Array<{ trackId: string; elementId: string }>;
 	undo: () => void;
 	redo: () => void;
+	transcribe: (
+		options?: AgentBridgeTranscribeOptions,
+	) => Promise<TranscriptionResult>;
 }
 
 declare global {
@@ -150,7 +174,7 @@ function splitAtTime({
 export function mountAgentBridge(editor: EditorCore): () => void {
 	const bridge: AgentBridge = {
 		ready: true,
-		version: "0.1.0-phase0",
+		version: "0.1.0-phase0.5",
 		getEditor: () => editor,
 		invokeAction,
 		getState: () => buildProjectState(editor),
@@ -191,6 +215,58 @@ export function mountAgentBridge(editor: EditorCore): () => void {
 		},
 		redo: () => {
 			editor.command.redo();
+		},
+		transcribe: async (options = {}) => {
+			const {
+				provider = "groq",
+				language = "auto",
+				insertCaptions = true,
+				onProgress,
+			} = options;
+
+			const scene = editor.scenes.getActiveScene();
+			const mediaAssets = editor.media.getAssets();
+			const totalDuration = editor.timeline.getTotalDuration();
+
+			const audioBlob = await extractTimelineAudio({
+				tracks: scene.tracks,
+				mediaAssets,
+				totalDuration,
+				onProgress: (progress) => {
+					onProgress?.({
+						status: "transcribing",
+						progress: Math.round(progress * 0.3),
+						message: "Extracting timeline audio...",
+					});
+				},
+			});
+
+			let result: TranscriptionResult;
+			if (provider === "groq") {
+				result = await transcribeWithGroq({
+					audioBlob,
+					language,
+					onProgress,
+				});
+			} else {
+				const { samples } = await decodeAudioToFloat32({
+					audioBlob,
+					sampleRate: DEFAULT_TRANSCRIPTION_SAMPLE_RATE,
+				});
+				result = await transcriptionService.transcribe({
+					audioData: samples,
+					language,
+					modelId: "whisper-large-v3-turbo",
+					onProgress,
+				});
+			}
+
+			if (insertCaptions) {
+				const captions = buildCaptionChunks({ segments: result.segments });
+				insertCaptionChunksAsTextTrack({ editor, captions });
+			}
+
+			return result;
 		},
 	};
 

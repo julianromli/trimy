@@ -11,7 +11,7 @@ export const TRANSCRIPTION_MODELS: TranscriptionModel[] = [
 		description: "Fastest, lower accuracy",
 	},
 	{
-		id: "whisper-small",
+		id: "whisper-large-v3-turbo",
 		name: "Small",
 		huggingFaceId: "onnx-community/whisper-small",
 		description: "Good balance of speed and accuracy",
@@ -31,4 +31,4 @@ export const TRANSCRIPTION_MODELS: TranscriptionModel[] = [
 ];
 
 export const DEFAULT_TRANSCRIPTION_MODEL: TranscriptionModelId =
-	"whisper-small";
+	"whisper-large-v3-turbo";

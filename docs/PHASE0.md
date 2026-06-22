@@ -14,8 +14,8 @@ Prove that Trimy can execute timeline edits programmatically (same undo stack as
 | `getState()` project snapshot | Done |
 | `undo()` / `redo()` | Done |
 | Dev server runs | Done (port 3001 with `.env.local`) |
-| Manual DevTools validation with clip | Pending (needs media import on local machine) |
-| Groq transcription spike | Pending |
+| Manual DevTools validation with clip | Pending (needs media + GROQ_API_KEY on dev machine) |
+| Groq transcription spike | Done (API route + agent bridge `transcribe`) |
 
 ## Implementation
 
@@ -54,3 +54,21 @@ Requires:
 - Migrate editor routes from Next.js → Vite SPA
 - Tauri 2 shell with WebView2
 - Strip cloud auth (better-auth, PostgreSQL) for local-first desktop
+
+
+## Phase 0.5 — Groq transcription
+
+**Files:**
+- `apps/web/src/app/api/transcribe/groq/route.ts` — server proxy (keeps `GROQ_API_KEY` off client)
+- `apps/web/src/services/transcription/groq-client.ts` — browser client
+- `apps/web/src/services/transcription/groq-parse.ts` — verbose_json → `TranscriptionResult`
+- `scripts/spike-groq-transcribe.sh` — CLI spike without editor
+
+**Dev setup:** add `GROQ_API_KEY=gsk_...` to `apps/web/.env.local`, restart `bun run dev:web`.
+
+**Agent bridge:**
+```javascript
+await __agentBridge.transcribe({ provider: "groq", language: "id" })
+// insertCaptions: true (default) adds subtitle track
+await __agentBridge.transcribe({ provider: "local", language: "en", insertCaptions: false })
+```

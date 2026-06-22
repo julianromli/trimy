@@ -13,6 +13,8 @@
     "dev:tools": "turbo run dev --filter=@opencut/tools",
     "dev:wasm": "cargo watch -w rust/crates -w rust/wasm/src -s 'wasm-pack build rust/wasm --target bundler --out-dir pkg'",
     "dev:web": "turbo run dev --filter=@opencut/web",
+    "dev:tauri": "cd apps/tauri && cargo tauri dev",
+    "build:tauri": "cd apps/tauri && cargo tauri build",
     "format:web": "prettier apps/web/src/services/renderer --write",
     "generate:fonts": "npx tsx apps/web/scripts/generate-font-sprites.ts",
     "lint:web": "eslint apps/web/src --ext .ts,.tsx",

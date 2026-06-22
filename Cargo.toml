@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "apps/desktop",
+    "apps/tauri/src-tauri",
     "rust/crates/time",
     "rust/crates/bridge",
     "rust/crates/effects",
