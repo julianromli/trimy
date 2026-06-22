@@ -142,7 +142,7 @@ async function describeFrameWithVision({
 	pngBase64: string;
 	model: string;
 }) {
-	const response = await fetch("/api/agent/vision", {
+	const response = await trimyFetch("/api/agent/vision", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({

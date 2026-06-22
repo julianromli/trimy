@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import "./trimy.css";
 import { router } from "./router";
+import { initTauriTransport } from "@/utils/tauri-transport";
+
+initTauriTransport();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

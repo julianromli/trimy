@@ -6,20 +6,33 @@ English & Indonesian focused. Podcast, talking head, monolog, and screen-record 
 
 ## Status
 
+**v0.1.0 — Desktop release** (Phase 4)
+
+- [x] Tauri Rust proxy (OpenRouter + Groq + vision) with OS keychain
+- [x] Native import/export dialogs in desktop mode
+- [x] Actionable agent errors + retry
+- [x] NSIS installer (`installMode: currentUser`)
+- [x] Phase 3 intelligence: real silence, filler, frame vision
+
+See [`docs/PHASE4.md`](docs/PHASE4.md) and [`docs/BYOK.md`](docs/BYOK.md).
+
+**Phase 3 — Intelligence** (done)
+
+- [x] Real RMS silence detection
+- [x] Word-level filler removal (EN + ID)
+- [x] Frame vision via Gemini 3.5 Flash
+- [x] Groq audio chunking for large files
+
 **Phase 2 — AI Agent sidebar** (done)
 
 - [x] Agent panel (4th column, `Ctrl+J`)
-- [x] OpenRouter BYOK via dev proxy (`OPENROUTER_API_KEY` in `apps/editor/.env.local`)
-- [x] 15 internal tools + confirm-before-execute for batch edits
+- [x] 15 internal tools + confirm-before-execute
 - [x] E2E: agent panel, chat split, import→export
 
 **Phase 1 — Tauri + Vite** (done)
 
-- [x] Tauri 2 scaffold (`apps/tauri`, `bun run dev:tauri`)
-- [x] Vite SPA editor (`apps/editor`)
-- [ ] Windows `.exe` production smoke test
-
-See [`docs/PHASE2.md`](docs/PHASE2.md) for agent setup.
+- [x] Tauri 2 + Vite SPA editor
+- [x] Windows `.exe` build path (`bun run build:tauri`)
 
 ## Agent Bridge & Sidebar
 
@@ -49,7 +62,7 @@ All mutations go through `CommandManager` — undo/redo works the same as manual
 | Layer | Tech |
 |-------|------|
 | Editor core | OpenCut Classic (TypeScript + Rust/WASM compositor) |
-| Desktop (planned) | Tauri 2 + WebView2 |
+| Desktop | Tauri 2 + WebView2 (NSIS installer) |
 | Agent LLM | OpenRouter BYOK (`openai/gpt-5.4-mini`) |
 | Vision | OpenRouter BYOK (`google/gemini-3.5-flash`) |
 | Transcription | Groq `whisper-large-v3-turbo` + local `whisper-large-v3-turbo` offline |

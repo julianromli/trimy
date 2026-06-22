@@ -6,8 +6,10 @@ import {
 	requiresConfirm,
 } from "./confirm-gate";
 import { formatContextForPrompt } from "./context-builder";
+import { formatAgentError, parseHttpErrorMessage } from "./errors";
 import { AGENT_SYSTEM_PROMPT } from "./system-prompt";
 import { TOOL_DEFINITIONS } from "./tool-schemas";
+import { trimyFetch } from "./transport";
 import type {
 	AgentEvent,
 	AgentMessage,
@@ -83,7 +85,9 @@ export class AgentRuntime {
 		} catch (error) {
 			this.callbacks.onEvent({
 				type: "error",
-				message: error instanceof Error ? error.message : "Agent failed",
+				message: formatAgentError({
+					message: error instanceof Error ? error.message : "Agent failed",
+				}),
 			});
 		} finally {
 			this.running = false;
@@ -274,7 +278,7 @@ export class AgentRuntime {
 			};
 		}>;
 	}> {
-		const response = await fetch("/api/agent/openrouter", {
+		const response = await trimyFetch("/api/agent/openrouter", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -288,7 +292,12 @@ export class AgentRuntime {
 
 		if (!response.ok) {
 			const text = await response.text();
-			throw new Error(`OpenRouter error ${response.status}: ${text}`);
+			throw new Error(
+				formatAgentError({
+					status: response.status,
+					message: parseHttpErrorMessage(text),
+				}),
+			);
 		}
 
 		return response.json();

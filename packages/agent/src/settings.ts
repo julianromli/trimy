@@ -42,11 +42,13 @@ export function saveAgentSettings(settings: Partial<AgentSettings>): AgentSettin
 	const current = loadAgentSettings();
 	const next = { ...current, ...settings };
 	if (typeof window !== "undefined") {
-		const toStore = { ...next };
-		// Don't persist empty keys if server proxy is used
-		localStorage.setItem(SETTINGS_KEY, JSON.stringify(toStore));
+		localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
 	}
 	return next;
+}
+
+export function hasGroqKey(settings: AgentSettings): boolean {
+	return Boolean(settings.groqApiKey?.trim());
 }
 
 export function hasOpenRouterKey(settings: AgentSettings): boolean {

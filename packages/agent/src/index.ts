@@ -9,4 +9,6 @@ export * from "./filler-words";
 export * from "./silence-detection";
 export * from "./highlights";
 export * from "./vision";
+export * from "./transport";
+export * from "./errors";
 export { AgentRuntime, type AgentRuntimeCallbacks } from "./runtime";

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useEditor } from "@/editor/use-editor";
+import { pickMediaFiles, isTauriRuntime } from "@/utils/desktop-files";
 
 interface UseFileUploadOptions {
 	accept?: string;
@@ -25,6 +26,15 @@ export function useFileUpload({
 	}
 
 	function openFilePicker() {
+		if (isTauriRuntime()) {
+			void pickMediaFiles({ multiple: multiple ?? false }).then((files) => {
+				if (files && files.length > 0 && onFilesSelected) {
+					onFilesSelected(files);
+				}
+			});
+			return;
+		}
+
 		if (!inputRef.current) return;
 
 		inputRef.current.accept = accept || "*";

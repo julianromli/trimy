@@ -22,6 +22,11 @@ import { usePanelStore } from "@/editor/panel-store";
 import { useEditor } from "@/editor/use-editor";
 import { getCachedTranscript } from "@/agent-bridge/tools";
 import { transcriptionService } from "@/services/transcription/service";
+import {
+	fetchApiStatus,
+	isTauriRuntime,
+	saveApiKeyToKeyring,
+} from "@/utils/tauri-transport";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/ui";
 
@@ -92,6 +97,9 @@ export function AgentPanel() {
 	const { agentCollapsed, toggleAgentCollapsed } = usePanelStore();
 	const [settings, setSettings] = useState<AgentSettings>(() => loadAgentSettings());
 	const [serverKeyConfigured, setServerKeyConfigured] = useState(false);
+	const [groqKeyConfigured, setGroqKeyConfigured] = useState(false);
+	const [openRouterDraft, setOpenRouterDraft] = useState("");
+	const [groqDraft, setGroqDraft] = useState("");
 	const [messages, setMessages] = useState<AgentMessage[]>([]);
 	const [input, setInput] = useState("");
 	const [streaming, setStreaming] = useState("");
@@ -107,6 +115,7 @@ export function AgentPanel() {
 	const [localModelProgress, setLocalModelProgress] = useState<string | null>(
 		null,
 	);
+	const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
 	const runtimeRef = useRef<AgentRuntime | null>(null);
 	const listRef = useRef<HTMLDivElement>(null);
 
@@ -116,13 +125,11 @@ export function AgentPanel() {
 	}, [projectId]);
 
 	useEffect(() => {
-		fetch("/api/agent/status")
-			.then((r) => r.json())
-			.then((data: { openRouter?: boolean }) => {
-				setServerKeyConfigured(Boolean(data.openRouter));
-			})
-			.catch(() => setServerKeyConfigured(false));
-	}, []);
+		void fetchApiStatus().then((status) => {
+			setServerKeyConfigured(status.openRouter);
+			setGroqKeyConfigured(status.groq);
+		});
+	}, [showSettings]);
 
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
@@ -214,6 +221,7 @@ export function AgentPanel() {
 			setIsRunning(true);
 			setStreaming("");
 			setPendingAction(null);
+			setLastUserMessage(trimmed);
 
 			const userMsg: AgentMessage = {
 				id: `u-${Date.now()}`,
@@ -259,12 +267,55 @@ export function AgentPanel() {
 			approved: false,
 		});
 		setPendingAction(null);
+		setMessages((prev) => {
+			const next = [
+				...prev,
+				{
+					id: `cancel-${Date.now()}`,
+					role: "system" as const,
+					content: "Cancelled — no changes made.",
+					timestamp: Date.now(),
+				},
+			];
+			if (projectId) saveAgentSession(projectId, next);
+			return next;
+		});
 	};
 
-	const saveKey = (key: string) => {
-		const next = saveAgentSettings({ openRouterApiKey: key });
+	const saveOpenRouterKey = async (key: string) => {
+		const trimmed = key.trim();
+		if (!trimmed) return;
+
+		if (isTauriRuntime()) {
+			await saveApiKeyToKeyring({ provider: "openrouter", key: trimmed });
+			setServerKeyConfigured(true);
+			setOpenRouterDraft("");
+			const next = saveAgentSettings({ openRouterApiKey: "" });
+			setSettings(next);
+			return;
+		}
+
+		const next = saveAgentSettings({ openRouterApiKey: trimmed });
 		setSettings(next);
-		setShowSettings(false);
+		setServerKeyConfigured(true);
+	};
+
+	const saveGroqKey = async (key: string) => {
+		const trimmed = key.trim();
+		if (!trimmed) return;
+
+		if (isTauriRuntime()) {
+			await saveApiKeyToKeyring({ provider: "groq", key: trimmed });
+			setGroqKeyConfigured(true);
+			setGroqDraft("");
+			const next = saveAgentSettings({ groqApiKey: "" });
+			setSettings(next);
+			return;
+		}
+
+		const next = saveAgentSettings({ groqApiKey: trimmed });
+		setSettings(next);
+		setGroqKeyConfigured(true);
 	};
 
 	const downloadLocalModel = async () => {
@@ -326,13 +377,31 @@ export function AgentPanel() {
 			{showSettings && (
 				<div className="border-b p-3 space-y-2 text-xs">
 					<label className="block text-muted-foreground">OpenRouter API Key</label>
-					<input
-						type="password"
-						className="w-full rounded border bg-background px-2 py-1.5 text-xs"
-						defaultValue={settings.openRouterApiKey}
-						onBlur={(e) => saveKey(e.target.value)}
-						placeholder="sk-or-..."
-					/>
+					{serverKeyConfigured && isTauriRuntime() ? (
+						<p className="text-emerald-400">Key saved in OS credential store ✓</p>
+					) : (
+						<input
+							type="password"
+							className="w-full rounded border bg-background px-2 py-1.5 text-xs"
+							value={openRouterDraft || settings.openRouterApiKey}
+							onChange={(e) => setOpenRouterDraft(e.target.value)}
+							onBlur={(e) => void saveOpenRouterKey(e.target.value)}
+							placeholder="sk-or-..."
+						/>
+					)}
+					<label className="block text-muted-foreground pt-1">Groq API Key (transcription)</label>
+					{groqKeyConfigured && isTauriRuntime() ? (
+						<p className="text-emerald-400">Groq key saved ✓</p>
+					) : (
+						<input
+							type="password"
+							className="w-full rounded border bg-background px-2 py-1.5 text-xs"
+							value={groqDraft || settings.groqApiKey}
+							onChange={(e) => setGroqDraft(e.target.value)}
+							onBlur={(e) => void saveGroqKey(e.target.value)}
+							placeholder="gsk_..."
+						/>
+					)}
 					<p className="text-muted-foreground">Chat: {settings.chatModel}</p>
 					<p className="text-muted-foreground">Vision: {settings.visionModel}</p>
 					<div className="space-y-1">
@@ -398,7 +467,17 @@ export function AgentPanel() {
 				)}
 			</div>
 
-			<div className="border-t p-2">
+			<div className="border-t p-2 space-y-2">
+				{lastUserMessage && !isRunning && !pendingAction && (
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-7 w-full text-xs"
+						onClick={() => send(lastUserMessage)}
+					>
+						Retry last message
+					</Button>
+				)}
 				<form
 					className="flex gap-2"
 					onSubmit={(e) => {

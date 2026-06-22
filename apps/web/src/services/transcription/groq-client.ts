@@ -1,3 +1,4 @@
+import { trimyFetch } from "@trimy/agent";
 import type {
 	TranscriptionLanguage,
 	TranscriptionProgress,
@@ -27,7 +28,7 @@ async function transcribeChunk({
 		formData.append("language", language);
 	}
 
-	const response = await fetch("/api/transcribe/groq", {
+	const response = await trimyFetch("/api/transcribe/groq", {
 		method: "POST",
 		body: formData,
 	});

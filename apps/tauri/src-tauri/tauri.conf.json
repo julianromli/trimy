@@ -5,7 +5,7 @@
   "identifier": "com.faizintifada.trimy",
   "build": {
     "frontendDist": "../editor/dist",
-    "devUrl": "http://localhost:5173/projects",
+    "devUrl": "http://localhost:5173/",
     "beforeDevCommand": "cd ../.. && bun run dev:editor",
     "beforeBuildCommand": "cd ../.. && bun run build:editor"
   },
@@ -28,7 +28,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,6 +36,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": false,
+        "minimumWebview2Version": "110.0.1531.0"
+      }
+    },
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
