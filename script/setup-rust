@@ -1,21 +1,31 @@
 #!/usr/bin/env bash
-
-# Installs the Rust toolchain via rustup.
-# Run this before any platform-specific setup script.
+# Installs Rust toolchain, wasm32 target, and wasm-pack (macOS/Linux).
+# Run from repo root: ./script/setup-rust
 
 set -euo pipefail
 
-CARGO_BIN="$HOME/.cargo/bin/rustup"
+CARGO_BIN="$HOME/.cargo/bin"
 
-if command -v rustup &> /dev/null || [ -f "$CARGO_BIN" ]; then
-  echo "rustup already installed"
-  exit 0
+if ! command -v rustup &> /dev/null && [ ! -f "$CARGO_BIN/rustup" ]; then
+  echo "Installing rustup..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 fi
 
-echo "Installing rustup..."
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# shellcheck disable=SC1091
 source "$HOME/.cargo/env"
 
-echo "Installing wasm-pack..."
-cargo install wasm-pack
-echo "Done. Rust toolchain ready."
+echo "Rust: $(rustc --version)"
+
+echo "Adding wasm32-unknown-unknown target..."
+rustup target add wasm32-unknown-unknown
+
+if ! command -v wasm-pack &> /dev/null; then
+  echo "Installing wasm-pack (may take a few minutes)..."
+  cargo install wasm-pack
+else
+  echo "wasm-pack already installed: $(wasm-pack --version)"
+fi
+
+echo ""
+echo "Done. Normal dev does NOT need build:wasm — opencut-wasm comes from npm."
+echo "Only run 'bun run build:wasm' if you edit rust/wasm."

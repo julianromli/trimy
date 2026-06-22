@@ -37,13 +37,22 @@ From repo root:
 
 ```bash
 bun install
-bun run build:wasm    # first time only
+
+# No build:wasm needed — opencut-wasm comes from npm unless you edit rust/wasm
 
 # Terminal 1 — Vite editor (required for Tauri dev)
 bun run dev:editor
 
 # Terminal 2 — Tauri window
 bun run dev:tauri
+```
+
+**Windows note:** If you do need a local WASM build, install tools first:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\script\setup-rust.ps1
+# new terminal
+bun run build:wasm
 ```
 
 Tauri `beforeDevCommand` auto-starts `dev:editor` if you run from `apps/tauri`:

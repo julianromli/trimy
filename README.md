@@ -58,31 +58,58 @@ All mutations go through `CommandManager` — undo/redo works the same as manual
 ### Prerequisites
 
 - [Bun](https://bun.sh) 1.2+
-- [Rust](https://rustup.rs) (for WASM compositor build)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/)
+- **Rust + wasm-pack** — only if you edit `rust/wasm` (see [WASM build](#wasm-build-optional))
 
-### Setup
+### Quick start (Windows / macOS / Linux)
 
 ```bash
 git clone https://github.com/julianromli/trimy.git
 cd trimy
 bun install
 
-# Build WASM compositor (first time)
-bun run build:wasm
+# Copy env for Groq transcription
+cp apps/editor/.env.example apps/editor/.env.local
+# Add GROQ_API_KEY=gsk_...
 
-# Start web editor
-bun run dev:web
+# Terminal 1 — Vite editor
+bun run dev:editor
 
-# Desktop shell (dev — starts web server + Tauri window)
+# Terminal 2 — Tauri desktop window (optional)
 bun run dev:tauri
 ```
 
-Open `http://localhost:3000` and create/open a project.
+Open `http://localhost:5173/projects` (or use the Tauri window). **You do not need `bun run build:wasm`** for normal dev — `opencut-wasm` is installed from npm.
 
-Add `GROQ_API_KEY` to `apps/web/.env.local` for cloud transcription (Phase 0.5).
+### WASM build (optional)
 
-> Docker (PostgreSQL, Redis) is optional for Phase 0 — local IndexedDB storage works for editor-only testing.
+Only required when changing Rust code under `rust/wasm` or `rust/crates`.
+
+**Windows (PowerShell):**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\script\setup-rust.ps1
+# Open a NEW terminal, then:
+bun run build:wasm
+```
+
+**macOS / Linux:**
+
+```bash
+./script/setup-rust
+bun run build:wasm
+```
+
+If `wasm-pack` is missing, `bun run build:wasm` prints install instructions instead of a cryptic error.
+
+### Legacy web path (Next.js)
+
+```bash
+bun run dev:web   # port 3000 — reference only; desktop uses apps/editor
+```
+
+Add `GROQ_API_KEY` to `apps/editor/.env.local` (or `apps/web/.env.local` for legacy path).
+
+> Docker (PostgreSQL, Redis) is optional — local IndexedDB storage works for editor-only testing.
 
 ## Attribution
 
