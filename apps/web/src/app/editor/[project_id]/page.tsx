@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/resizable";
 import { AssetsPanel } from "@/components/editor/panels/assets";
 import { PropertiesPanel } from "@/components/editor/panels/properties";
+import { AgentPanel } from "@trimy/agent-ui";
 import { Timeline } from "@/timeline/components";
 import { PreviewPanel } from "@/preview/components";
 import { EditorHeader } from "@/components/editor/editor-header";
@@ -80,7 +81,7 @@ function DegradedRendererBanner() {
 
 function EditorLayout() {
 	usePasteMedia();
-	const { panels, setPanel } = usePanelStore();
+	const { panels, setPanel, agentCollapsed } = usePanelStore();
 	const activeScene = useEditor((editor) =>
 		editor.scenes.getActiveSceneOrNull(),
 	);
@@ -156,6 +157,9 @@ function EditorLayout() {
 							panel: "properties",
 							size: sizes[2] ?? panels.properties,
 						});
+						if (sizes[3] !== undefined) {
+							setPanel({ panel: "agent", size: sizes[3] });
+						}
 					}}
 				>
 					<ResizablePanel
@@ -185,11 +189,23 @@ function EditorLayout() {
 
 					<ResizablePanel
 						defaultSize={panels.properties}
-						minSize={15}
-						maxSize={40}
+						minSize={12}
+						maxSize={35}
 						className="min-w-0"
 					>
 						<PropertiesPanel />
+					</ResizablePanel>
+
+					<ResizableHandle withHandle />
+
+					<ResizablePanel
+						defaultSize={agentCollapsed ? 3 : panels.agent}
+						minSize={agentCollapsed ? 3 : 15}
+						maxSize={agentCollapsed ? 3 : 40}
+						collapsible
+						className="min-w-0"
+					>
+						<AgentPanel />
 					</ResizablePanel>
 				</ResizablePanelGroup>
 			</ResizablePanel>

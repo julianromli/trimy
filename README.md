@@ -6,39 +6,40 @@ English & Indonesian focused. Podcast, talking head, monolog, and screen-record 
 
 ## Status
 
-**Phase 0.5 — Groq transcription** (done, staged)
+**Phase 2 — AI Agent sidebar** (done)
 
-- [x] Groq `whisper-large-v3-turbo` API route + `__agentBridge.transcribe`
-- [ ] Manual DevTools validation with media clip on dev machine
+- [x] Agent panel (4th column, `Ctrl+J`)
+- [x] OpenRouter BYOK via dev proxy (`OPENROUTER_API_KEY` in `apps/editor/.env.local`)
+- [x] 15 internal tools + confirm-before-execute for batch edits
+- [x] E2E: agent panel, chat split, import→export
 
-**Phase 1 — Tauri shell** (in progress)
+**Phase 1 — Tauri + Vite** (done)
 
 - [x] Tauri 2 scaffold (`apps/tauri`, `bun run dev:tauri`)
-- [ ] Windows `.exe` smoke test
-- [ ] Vite migration (editor SPA)
+- [x] Vite SPA editor (`apps/editor`)
+- [ ] Windows `.exe` production smoke test
 
-Full blueprint: [`docs/blueprint.md`](docs/blueprint.md)
+See [`docs/PHASE2.md`](docs/PHASE2.md) for agent setup.
 
-## Agent Bridge (Phase 0)
+## Agent Bridge & Sidebar
 
-After loading a project in the editor, open DevTools and run:
+**In-app chat:** Open the **Trimy Agent** panel (right column, `Ctrl+J`). Set `OPENROUTER_API_KEY` in `apps/editor/.env.local` or enter key in panel settings.
+
+**DevTools / E2E:**
 
 ```javascript
 // Project snapshot
 window.__agentBridge.getState()
 
-// Split at playhead (uses selection, or elements under playhead)
+// All agent tools
+await window.__agentBridge.executeTool("split_at", { seconds: 60 })
+await window.__agentBridge.executeTool("detect_silence", { minDurationMs: 1500 })
+await window.__agentBridge.executeTool("get_transcript")
+
+// Split at playhead
 window.__agentBridge.splitAtPlayhead()
-
-// Split at 12.5 seconds
 window.__agentBridge.splitAt(12.5)
-
-// Undo / redo
 window.__agentBridge.undo()
-window.__agentBridge.redo()
-
-// Keyboard-parity actions
-window.__agentBridge.invokeAction("split")
 ```
 
 All mutations go through `CommandManager` — undo/redo works the same as manual edits.
@@ -67,9 +68,10 @@ git clone https://github.com/julianromli/trimy.git
 cd trimy
 bun install
 
-# Copy env for Groq transcription
+# Copy env for Groq + OpenRouter
 cp apps/editor/.env.example apps/editor/.env.local
 # Add GROQ_API_KEY=gsk_...
+# Add OPENROUTER_API_KEY=sk-or-...
 
 # Terminal 1 — Vite editor
 bun run dev:editor

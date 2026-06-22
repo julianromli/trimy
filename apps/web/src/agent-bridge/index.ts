@@ -18,11 +18,14 @@ import type {
 } from "@/transcription/types";
 import { transcriptionService } from "@/services/transcription/service";
 import { transcribeWithGroq } from "@/services/transcription/groq-client";
+import { cacheTranscript } from "./tools";
 import { buildCaptionChunks } from "@/transcription/caption";
 import { insertCaptionChunksAsTextTrack } from "@/subtitles/insert";
 import { buildElementFromMedia } from "@/timeline/element-utils";
 import { DEFAULT_NEW_ELEMENT_DURATION } from "@/timeline/creation";
 import type { ExportOptions, ExportResult } from "@/export";
+import { executeAgentTool } from "./tools";
+import type { ToolName, ToolResult } from "@trimy/agent";
 
 export type AgentBridgeSplitRetainSide = "both" | "left" | "right";
 
@@ -80,6 +83,10 @@ export interface AgentBridge {
 		startTimeSeconds?: number;
 	}) => void;
 	exportVideo: (options?: ExportOptions) => Promise<ExportResult>;
+	executeTool: (
+		name: ToolName,
+		args?: Record<string, unknown>,
+	) => Promise<ToolResult>;
 }
 
 declare global {
@@ -182,7 +189,7 @@ function splitAtTime({
 export function mountAgentBridge(editor: EditorCore): () => void {
 	const bridge: AgentBridge = {
 		ready: true,
-		version: "0.1.0-phase0.5",
+		version: "0.2.0-phase2",
 		getEditor: () => editor,
 		invokeAction,
 		getState: () => buildProjectState(editor),
@@ -274,6 +281,11 @@ export function mountAgentBridge(editor: EditorCore): () => void {
 				insertCaptionChunksAsTextTrack({ editor, captions });
 			}
 
+			const project = editor.project.getActiveOrNull();
+			if (project) {
+				cacheTranscript(project.metadata.id, result);
+			}
+
 			return result;
 		},
 		addMediaToTimeline: (options = {}) => {
@@ -310,6 +322,7 @@ export function mountAgentBridge(editor: EditorCore): () => void {
 		},
 		exportVideo: (options = { format: "mp4", quality: "low", includeAudio: true }) =>
 			editor.project.export({ options }),
+		executeTool: (name, args = {}) => executeAgentTool(name, args),
 	};
 
 	window.__agentBridge = bridge;

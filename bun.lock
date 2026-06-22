@@ -46,6 +46,8 @@
         "@radix-ui/react-slot": "^1.2.4",
         "@radix-ui/react-tooltip": "^1.2.8",
         "@tanstack/react-router": "^1.120.3",
+        "@trimy/agent": "workspace:*",
+        "@trimy/agent-ui": "workspace:*",
         "@types/culori": "^4.0.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -182,6 +184,25 @@
         "tailwindcss": "^4.2.1",
         "typescript": "^5.8.3",
         "wrangler": "^4.77.0",
+      },
+    },
+    "packages/agent": {
+      "name": "@trimy/agent",
+      "version": "0.1.0",
+      "dependencies": {
+        "nanoid": "^5.1.5",
+        "zod": "4.3.6",
+      },
+    },
+    "packages/agent-ui": {
+      "name": "@trimy/agent-ui",
+      "version": "0.1.0",
+      "dependencies": {
+        "@trimy/agent": "workspace:*",
+        "lucide-react": "^0.562.0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "zustand": "^5.0.2",
       },
     },
   },
@@ -1024,6 +1045,10 @@
     "@tanstack/store": ["@tanstack/store@0.9.3", "", {}, "sha512-8reSzl/qGWGGVKhBoxXPMWzATSbZLZFWhwBAFO9NAyp0TxzfBP0mIrGb8CP8KrQTmvzXlR/vFPPUrHTLBGyFyw=="],
 
     "@tanstack/virtual-file-routes": ["@tanstack/virtual-file-routes@1.162.0", "", {}, "sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA=="],
+
+    "@trimy/agent": ["@trimy/agent@workspace:packages/agent"],
+
+    "@trimy/agent-ui": ["@trimy/agent-ui@workspace:packages/agent-ui"],
 
     "@trimy/desktop": ["@trimy/desktop@workspace:apps/tauri"],
 

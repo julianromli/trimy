@@ -12,6 +12,81 @@ const GROQ_TRANSCRIPTION_URL =
 	"https://api.groq.com/openai/v1/audio/transcriptions";
 const GROQ_MODEL = "whisper-large-v3-turbo";
 
+function openRouterProxy(apiKey: string | undefined): Plugin {
+	return {
+		name: "trimy-openrouter-proxy",
+		configureServer(server) {
+			server.middlewares.use("/api/agent/status", (_req, res) => {
+				res.statusCode = 200;
+				res.setHeader("Content-Type", "application/json");
+				res.end(
+					JSON.stringify({
+						openRouter: Boolean(apiKey),
+						groq: Boolean(process.env.GROQ_API_KEY),
+					}),
+				);
+			});
+
+			server.middlewares.use("/api/agent/openrouter", async (req, res, next) => {
+				if (req.method !== "POST") {
+					next();
+					return;
+				}
+
+				if (!apiKey) {
+					res.statusCode = 503;
+					res.setHeader("Content-Type", "application/json");
+					res.end(
+						JSON.stringify({
+							error:
+								"OPENROUTER_API_KEY is not configured. Add it to apps/editor/.env.local for dev.",
+						}),
+					);
+					return;
+				}
+
+				try {
+					const chunks: Buffer[] = [];
+					for await (const chunk of req) {
+						chunks.push(Buffer.from(chunk));
+					}
+					const body = Buffer.concat(chunks);
+
+					const orResponse = await fetch(
+						"https://openrouter.ai/api/v1/chat/completions",
+						{
+							method: "POST",
+							headers: {
+								Authorization: `Bearer ${apiKey}`,
+								"Content-Type": "application/json",
+								"HTTP-Referer": "https://trimy.app",
+								"X-Title": "Trimy",
+							},
+							body,
+						},
+					);
+
+					const responseText = await orResponse.text();
+					res.statusCode = orResponse.status;
+					res.setHeader("Content-Type", "application/json");
+					res.end(responseText);
+				} catch (error) {
+					res.statusCode = 502;
+					res.setHeader("Content-Type", "application/json");
+					res.end(
+						JSON.stringify({
+							error:
+								error instanceof Error
+									? error.message
+									: "OpenRouter proxy failed",
+						}),
+					);
+				}
+			});
+		},
+	};
+}
+
 function groqTranscribeProxy(apiKey: string | undefined): Plugin {
 	return {
 		name: "trimy-groq-transcribe-proxy",
@@ -101,6 +176,7 @@ function apiStubsPlugin(): Plugin {
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, __dirname, "");
 	const groqApiKey = env.GROQ_API_KEY;
+	const openRouterApiKey = env.OPENROUTER_API_KEY;
 
 	return {
 		publicDir: path.resolve(__dirname, "../web/public"),
@@ -109,6 +185,7 @@ export default defineConfig(({ mode }) => {
 			topLevelAwait(),
 			react(),
 			groqTranscribeProxy(groqApiKey),
+			openRouterProxy(openRouterApiKey),
 			apiStubsPlugin(),
 		],
 		server: {
@@ -121,6 +198,14 @@ export default defineConfig(({ mode }) => {
 		},
 		resolve: {
 			alias: [
+				{
+					find: "@trimy/agent",
+					replacement: path.resolve(__dirname, "../../packages/agent/src"),
+				},
+				{
+					find: "@trimy/agent-ui",
+					replacement: path.resolve(__dirname, "../../packages/agent-ui/src"),
+				},
 				{
 					find: "@/env/web",
 					replacement: path.resolve(__dirname, "src/env/web.ts"),

@@ -6,13 +6,20 @@ export interface PanelSizes {
 	tools: number;
 	preview: number;
 	properties: number;
+	agent: number;
 	mainContent: number;
 	timeline: number;
 }
 
+interface AgentPanelState {
+	agentCollapsed: boolean;
+	toggleAgentCollapsed: () => void;
+	setAgentCollapsed: (collapsed: boolean) => void;
+}
+
 export type PanelId = keyof PanelSizes;
 
-interface PanelState {
+interface PanelState extends AgentPanelState {
 	panels: PanelSizes;
 	setPanel: (args: { panel: PanelId; size: number }) => void;
 	setPanels: (sizes: Partial<PanelSizes>) => void;
@@ -23,6 +30,10 @@ export const usePanelStore = create<PanelState>()(
 	persist(
 		(set) => ({
 			...PANEL_CONFIG,
+			agentCollapsed: false,
+			toggleAgentCollapsed: () =>
+				set((state) => ({ agentCollapsed: !state.agentCollapsed })),
+			setAgentCollapsed: (collapsed) => set({ agentCollapsed: collapsed }),
 			setPanel: ({ panel, size }) =>
 				set((state) => ({
 					panels: {
@@ -41,7 +52,7 @@ export const usePanelStore = create<PanelState>()(
 		}),
 		{
 			name: "panel-sizes",
-			version: 2,
+			version: 3,
 			migrate: (persistedState) => {
 				const state = persistedState as
 					| {
@@ -66,6 +77,7 @@ export const usePanelStore = create<PanelState>()(
 							...PANEL_CONFIG.panels,
 							...state.panels,
 						},
+						agentCollapsed: false,
 					};
 				}
 
@@ -80,13 +92,18 @@ export const usePanelStore = create<PanelState>()(
 							state.properties ??
 							state.propertiesPanel ??
 							PANEL_CONFIG.panels.properties,
+						agent:
+							(state as { agent?: number }).agent ??
+							PANEL_CONFIG.panels.agent,
 						mainContent: state.mainContent ?? PANEL_CONFIG.panels.mainContent,
 						timeline: state.timeline ?? PANEL_CONFIG.panels.timeline,
 					},
+					agentCollapsed: false,
 				};
 			},
 			partialize: (state) => ({
 				panels: state.panels,
+				agentCollapsed: state.agentCollapsed,
 			}),
 		},
 	),

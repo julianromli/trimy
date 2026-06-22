@@ -1,0 +1,15 @@
+{
+  "name": "@trimy/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.5",
+    "zod": "4.3.6"
+  }
+}
