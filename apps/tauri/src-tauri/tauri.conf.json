@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.faizintifada.trimy",
   "build": {
-    "frontendDist": "../web/out",
-    "devUrl": "http://localhost:3000/projects",
-    "beforeDevCommand": "cd ../.. && bun run dev:web",
-    "beforeBuildCommand": "cd ../.. && bun run build:web"
+    "frontendDist": "../editor/dist",
+    "devUrl": "http://localhost:5173/projects",
+    "beforeDevCommand": "cd ../.. && bun run dev:editor",
+    "beforeBuildCommand": "cd ../.. && bun run build:editor"
   },
   "app": {
     "windows": [

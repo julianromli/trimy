@@ -9,67 +9,61 @@ Wrap the OpenCut Classic editor in a **Tauri 2** desktop window (WebView2 on Win
 | Item | Status |
 |------|--------|
 | Tauri 2 scaffold (`apps/tauri`) | Done |
-| Dev loads editor at `/projects` | Done (via `devUrl`) |
+| Dev loads editor at `/projects` | Done (via `devUrl` → Vite) |
 | Workspace + root scripts (`dev:tauri`) | Done |
 | App identifier `com.faizintifada.trimy` | Done |
 | Placeholder icons | Done |
 | `cargo check` compiles | Done |
+| **Vite SPA (`apps/editor`)** | **Done (Phase 1b)** |
+| Next.js shims (link, image, navigation) | Done |
+| Groq API Vite proxy | Done |
+| Strip cloud auth (better-auth, PG) | Done (editor bypasses Next app) |
 | Windows `.exe` build on Faiz PC | Pending |
-| Next.js → Vite SPA migration | Not started |
-| Strip cloud auth (better-auth, PG) | Not started |
 | Native file dialog (Tauri plugin) | Not started |
 
-## Architecture (Phase 1 interim)
+## Architecture (Phase 1)
 
 ```
 Tauri 2 (trimy-desktop)
-└── WebView2 → http://localhost:3000/projects  (dev)
-            → ../web/out                        (prod, after static export / Vite)
+└── WebView2 → http://localhost:5173/projects  (dev, Vite)
+            → ../editor/dist                    (prod)
 ```
 
-**Interim strategy:** keep Next.js dev server for Phase 1 dev builds. Production `.exe` needs either:
-
-1. **Vite migration** (target, Phase 1b) — editor + projects as SPA, static `dist/` for Tauri
-2. **Next standalone + sidecar** (fallback) — spawn `next start` from Tauri; heavier, not ideal
-
-Blueprint target is (1).
+`apps/editor` is a Vite SPA that reuses `apps/web/src` editor code via `@/` alias. Next.js APIs are shimmed; cloud deps (auth, Postgres, Redis) are not loaded.
 
 ## Dev commands
 
 From repo root:
 
 ```bash
-# Terminal 1 — web editor (required for Tauri dev)
-bun run dev:web
+bun install
+bun run build:wasm    # first time only
 
-# Terminal 2 — Tauri window (Linux/macOS/Windows with display)
+# Terminal 1 — Vite editor (required for Tauri dev)
+bun run dev:editor
+
+# Terminal 2 — Tauri window
 bun run dev:tauri
 ```
 
-Tauri `beforeDevCommand` auto-starts `dev:web` if you run from `apps/tauri`:
+Tauri `beforeDevCommand` auto-starts `dev:editor` if you run from `apps/tauri`:
 
 ```bash
 cd apps/tauri && bun run dev
 ```
 
+Add `GROQ_API_KEY` to `apps/editor/.env.local` for Groq transcription.
+
 ## Files
 
 | Path | Purpose |
 |------|---------|
-| `apps/tauri/src-tauri/tauri.conf.json` | Window, devUrl, bundle config |
-| `apps/tauri/src-tauri/Cargo.toml` | `trimy-desktop` Rust crate |
+| `apps/editor/` | Vite SPA + TanStack Router (Trimy desktop UI) |
+| `apps/editor/vite.config.ts` | Aliases, Groq proxy, API stubs |
+| `apps/editor/src/shims/` | `next/link`, `next/image`, `next/navigation` |
+| `apps/web/src/` | Shared editor core (unchanged) |
+| `apps/tauri/src-tauri/tauri.conf.json` | Window, devUrl, `frontendDist` |
 | `apps/tauri/src-tauri/src/lib.rs` | Tauri entry + logging plugin |
-| `apps/tauri/src-tauri/icons/` | App icons (placeholder) |
-| `apps/desktop/` | Legacy GPUI stub (unused by Trimy; keep for upstream parity) |
-
-## Phase 1b — Vite migration (next)
-
-1. Create `apps/editor` Vite SPA with TanStack Router
-2. Move editor routes: `/projects`, `/editor/:projectId`
-3. Port `@/` imports from `apps/web/src`
-4. Keep Groq API as Tauri command (Rust) or Vite dev proxy
-5. Remove: marketing pages, blog, auth, Drizzle, Cloudflare deploy
-6. Point `frontendDist` → `apps/editor/dist`
 
 ## Phase 1 exit criteria
 
