@@ -63,7 +63,7 @@ All mutations go through `CommandManager` — undo/redo works the same as manual
 |-------|------|
 | Editor core | OpenCut Classic (TypeScript + Rust/WASM compositor) |
 | Desktop | Tauri 2 + WebView2 (NSIS installer) |
-| Agent LLM | OpenRouter BYOK (`openai/gpt-5.4-mini`) |
+| Agent LLM | OpenRouter BYOK (`deepseek/deepseek-v4-pro`) |
 | Vision | OpenRouter BYOK (`google/gemini-3.5-flash`) |
 | Transcription | Groq `whisper-large-v3-turbo` + local `whisper-large-v3-turbo` offline |
 

@@ -95,7 +95,7 @@ export interface AgentSettings {
 
 export const DEFAULT_AGENT_SETTINGS: AgentSettings = {
 	openRouterApiKey: "",
-	chatModel: "openai/gpt-5.4-mini",
+	chatModel: "deepseek/deepseek-v4-pro",
 	visionModel: "google/gemini-3.5-flash",
 	groqApiKey: "",
 	transcriptionProvider: "groq",
